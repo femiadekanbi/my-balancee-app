@@ -1,44 +1,46 @@
-name: CI/CD Pipeline  # Name of the pipeline
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main  # This triggers the pipeline when code is pushed to the 'main' branch
+      - main  # Trigger the pipeline on push to the 'main' branch
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Specifies the OS for the runner
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  # Updated to version 3 to use Node.js 20
+      uses: actions/checkout@v3  # Updated to use Node.js 20
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3  # Updated to version 3
+      uses: actions/setup-node@v3  # Updated to use Node.js 20
       with:
-        node-version: '20'  # Updated to use Node.js version 20
+        node-version: '20'  # Specify Node.js version 20 explicitly
 
     - name: Install dependencies
-      run: npm install  # Runs the command to install your project's dependencies
+      run: npm install  # Ensure you have a valid package.json file in the repo
 
     - name: Run tests
-      run: npm test  # Runs tests (replace with your test command if different)
+      run: npm test  # Make sure you have a test script in your package.json
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build  # This job runs only after the 'build' job is successful
-    if: success()  # Only runs if all previous jobs have succeeded
+    needs: build
+    if: success()
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  # Updated to version 3
+      uses: actions/checkout@v3
 
     - name: Deploy to Staging
       env:
         STAGING_SERVER: ${{ secrets.STAGING_SERVER }}
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        ssh -i $SSH_PRIVATE_KEY -o StrictHostKeyChecking=no user@${STAGING_SERVER} 'bash -s' << 'EOF'
+        echo "$SSH_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        ssh -i private_key.pem -o StrictHostKeyChecking=no user@${STAGING_SERVER} 'bash -s' << 'EOF'
         cd /path/to/application  # Navigate to your application directory
         git pull origin main  # Pull the latest code from the 'main' branch
         npm install --production  # Install only production dependencies
